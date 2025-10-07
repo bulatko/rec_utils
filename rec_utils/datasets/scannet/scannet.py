@@ -29,23 +29,24 @@ class ScanNetDataset:
             self.ids = SPLIT_MAP[split]
 
         self.root_dir = root_dir
-        self.scenes = self.get_scene_list()
+        self.scenes = [None for _ in range(len(self.ids))]
         self.scene_id2index = {scene_id: index for index, scene_id in enumerate(self.ids)}
     
     def __len__(self):
         return len(self.scenes)
     
-    def get_scene_list(self):
-        scenes = []
-        for id in tqdm(self.ids, desc="Loading scenes"):
-            scenes.append(ScanNetScene(self.root_dir / id))
-        return scenes
+    def load_scene(self, index):
+        if self.scenes[index] is not None:
+            return self.scenes[index]
+        self.scenes[index] = ScanNetScene(self.root_dir / self.ids[index])
+        return self.scenes[index]
 
     def __getitem__(self, index):
         if isinstance(index, str):
             index = self.scene_id2index[index]
         if isinstance(index, int):
-            return self.scenes[index]
+            index = index
+            return self.load_scene(index)
 
         raise ValueError(f"Invalid index type {type(index)}")
 
