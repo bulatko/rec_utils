@@ -20,8 +20,10 @@ class DUSt3RDataset:
             root_dir = Path(root_dir)
 
         self.root_dir = root_dir
-        self.scene_ids = scenes if scenes is not None else [a for a in root_dir.iterdir() if a.is_dir()]
+        self.scene_ids = scenes if scenes is not None else [a.stem for a in root_dir.iterdir() if a.is_dir()]
         self.scenes = [None for _ in range(len(self.scene_ids))]
+
+        self.scene_id2index = {scene_id: index for index, scene_id in enumerate(self.scene_ids)}
 
     def load_scene(self, index):
         if self.scenes[index] is not None:
@@ -33,7 +35,14 @@ class DUSt3RDataset:
         return len(self.scenes)
 
     def __getitem__(self, index):
-        return self.load_scene(index)
+        if isinstance(index, str):
+            index = self.scene_id2index[index]
+        if isinstance(index, int):
+            index = index
+            return self.load_scene(index)
+
+        raise ValueError(f"Invalid index type {type(index)}")
+
 
     def __repr__(self):
         return f"DUSt3RDataset(root_dir={self.root_dir}, num_scenes={len(self.scenes)})"
@@ -65,7 +74,7 @@ class DUSt3RScene(Scene):
             self.frames.append(DUSt3RFrame(image_path=image_path, pose=pose, intrinsics=intrinsics, depth=depth, confidence=confidence, output_params=output_params))
 
         return self.frames
-        
+
 
 class DUSt3RFrame(Frame):
     def __init__(self, image_path, pose, intrinsics, depth, confidence, output_params):
@@ -91,6 +100,7 @@ class DUSt3RFrame(Frame):
         pose = np.eye(4)
         if self.pose is not None:
             pose = self.pose
+            
         
         if self._image_intrinsics is None and self._depth_intrinsics is None:
             raise ValueError("Image and depth intrinsics are both None")

@@ -1,4 +1,4 @@
 import numpy as np
 
-def abs_rel(gt_depth, depth):
-    return np.median(gt_depth / depth)
+def abs_rel(source_depth, target_depth):
+    return float(np.median(target_depth / source_depth))
