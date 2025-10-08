@@ -102,6 +102,7 @@ class ScanNetPosedImagesScene(ScanNetScene):
 class ScanNetFrame(Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
 
     @property
     def frame_id(self):

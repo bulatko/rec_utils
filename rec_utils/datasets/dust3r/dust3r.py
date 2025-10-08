@@ -9,8 +9,9 @@ import cv2
 
 
 def load_dust3r_scene(scene_dir):
-    output_params = torch.load(scene_dir / 'output_params.pt', weights_only=True)
-    scene_params = torch.load(scene_dir / 'scene_params.pt', weights_only=True)
+
+    output_params = torch.load(scene_dir / 'output_params.pt') if (scene_dir / 'output_params.pt').exists() else None
+    scene_params = torch.load(scene_dir / 'scene_params.pt')
 
     return output_params, scene_params
 

@@ -18,6 +18,8 @@ class Frame:
     def _preprocess_pose(self, matrix):
         if matrix is not None:
             matrix = np.asarray(matrix)
+            if np.isinf(matrix).any() or np.isnan(matrix).any():
+                return None
             if self._check_matrix_shape(matrix, possible_shapes=[(3, 3), (3, 4), (4, 4)]):
                 return self._extend_matrix(matrix)
             else:
@@ -61,6 +63,14 @@ class Frame:
             return self._intrinsics
 
         return self._intrinsics
+
+    @property
+    def image_intrinsics(self):
+        return adjust_intrinsics(self.unscaled_intrinsics, (1, 1), self.image_shape)
+    
+    @property
+    def depth_intrinsics(self):
+        return adjust_intrinsics(self.unscaled_intrinsics, (1, 1), self.depth_shape)
 
     def align(self, inv_pose: np.ndarray, gt_pose: np.ndarray, scale: float):
 
