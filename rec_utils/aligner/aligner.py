@@ -20,7 +20,7 @@ class Aligner:
         
         return cls(np.linalg.inv(source_pose), target_pose, scale)
 
-    def align_scene(self, scene: Scene, inplace=False):
+    def align(self, scene: Scene, inplace=False):
         if not inplace:
             scene = deepcopy(scene)
         

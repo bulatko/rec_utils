@@ -9,7 +9,7 @@ def read_bin(bin_path):
     return np.fromfile(bin_path, dtype=np.float32).reshape(-1, 6)
 
 def write_bin(bin_path, xyz, rgb):
-    if not os.path.exists(bin_path):
+    if not os.path.exists(bin_path.parent):
         raise FileNotFoundError(f"File {bin_path} does not exist")
     
     rgb = np.clip(rgb, 0, 255)[:, :3]

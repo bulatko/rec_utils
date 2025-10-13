@@ -97,7 +97,7 @@ class DUSt3RFrame(Frame):
     def frame_id(self):
         return Path(self.image_path).stem
 
-    def get_pcd(self, confidence_threshold=0):
+    def get_pcd(self, confidence_threshold=0, depth_truncation=np.inf):
         pose = np.eye(4)
         if self.pose is not None:
             pose = self.pose
@@ -118,7 +118,7 @@ class DUSt3RFrame(Frame):
         depth_shape = self.depth_shape
         image = cv2.resize(image, (depth_shape[1], depth_shape[0]), interpolation=cv2.INTER_LINEAR)
 
-        y, x = np.where((depth > 0) & (self.confidence > confidence_threshold))
+        y, x = np.where((depth > 0) & (self.confidence > confidence_threshold) & (depth < depth_truncation))
         colors = image[y, x]
         pixel_coords = np.vstack([x, y, np.ones(len(x))])
         normalized_coords = np.linalg.inv(depth_intrinsics)[:3, :3] @ pixel_coords
