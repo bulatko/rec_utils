@@ -66,30 +66,20 @@ class ScanNetPPScene(Scene):
 
     def get_frame_list(self):
         self.frames = []
-        # info_path = self.root_dir / "info.json"
         scene_name = os.path.basename(self.root_dir)
         info_path = f'/home/jovyan/users/lemeshko/mmdetection3d/data/scannetpp/scannetpp_src_data/data/{scene_name}/iphone/pose_intrinsic_imu.json'
         with open(info_path, "r") as f:
             info = json.load(f)
         color_dir = self.root_dir / "iphone" / "rgb"
         depth_dir = self.root_dir / "iphone" / "render_depth"
-        # intrinsics = info["intrinsics"]
-        # for frame in info["frames"]:
-        #     frame_id = Path(frame["filename_color"]).stem
-        #     color_path = color_dir / f"{frame_id}.jpg"
-        #     depth_path = depth_dir / f"{frame_id}.png"
-        #     pose = frame["pose"]
-        #     intrinsics = 
-
-        #     self.frames.append(ScanNetFrame(image_path=color_path, depth_path=depth_path, pose=pose, image_intrinsics=intrinsics, depth_scale=1000.0))
 
         for frame in os.listdir(color_dir):
             frame_id = os.path.splitext(frame)[0]
             color_path = color_dir / f"{frame_id}.jpg"
             depth_path = depth_dir / f"{frame_id}.png"
             depth_path = depth_path if os.path.exists(depth_path) else None
-            pose = info[frame_id]["pose"]
-            intrinsics = info[frame_id]["intrinsic"]
+            pose = info[frame_id]["aligned_pose"] if frame_id in info else None
+            intrinsics = info[frame_id]["intrinsic"] if frame_id in info else None
 
             self.frames.append(ScanNetPPFrame(image_path=color_path, depth_path=depth_path, pose=pose, image_intrinsics=intrinsics, depth_scale=1000.0))
         return self.frames
@@ -97,21 +87,6 @@ class ScanNetPPScene(Scene):
     def __repr__(self):
         return f"ScanNetPPScene(root_dir={self.root_dir}, num_frames={len(self.frames)})"
 
-
-# class ScanNetPosedImagesScene(ScanNetScene):
-
-#     def get_frame_list(self):
-#         self.frames = []
-#         image_paths = self.root_dir.glob("*.jpg")
-#         intrinsics = np.loadtxt(self.root_dir / "intrinsic.txt")
-#         for image_path in image_paths:
-#             frame_id = Path(image_path).stem
-#             color_path = self.root_dir / f"{frame_id}.jpg"
-#             depth_path = self.root_dir / f"{frame_id}.png"
-#             pose = np.loadtxt(self.root_dir / f"{frame_id}.txt")
-
-#             self.frames.append(ScanNetFrame(image_path=color_path, depth_path=depth_path, pose=pose, image_intrinsics=intrinsics, depth_scale=1000.0))
-#         return self.frames
 
 class ScanNetPPFrame(Frame):
     def __init__(self, *args, **kwargs):
