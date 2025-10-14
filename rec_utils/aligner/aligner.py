@@ -15,7 +15,6 @@ class Aligner:
     def build_1p1d(cls, source_pose, target_pose, source_depth, target_depth, align_fn=abs_rel, min_depth=0.0, max_depth=np.inf):
         mask = (target_depth > min_depth) & (target_depth < max_depth)
         source_depth = cv2.resize(source_depth, (target_depth.shape[1], target_depth.shape[0]), interpolation=cv2.INTER_LINEAR)
-        mask &= (source_depth > min_depth) & (source_depth < max_depth)
         scale = align_fn(source_depth[mask], target_depth[mask])
         
         return cls(np.linalg.inv(source_pose), target_pose, scale)
