@@ -11,13 +11,6 @@ import open3d as o3d
 import os
 
 
-# def load_hislam2_scene(scene_dir):
-
-#     output_params = torch.load(scene_dir / 'output_params.pt') if (scene_dir / 'output_params.pt').exists() else None
-#     scene_params = torch.load(scene_dir / 'scene_params.pt')
-
-#     return output_params, scene_params
-
 
 def to_se3_matrix(pvec):
     pose = np.eye(4)
@@ -30,7 +23,6 @@ def load_intrinsic_extrinsic(result, stamps):
     c = np.load(f'{result}/intrinsics.npy')
     intrinsic = o3d.core.Tensor([[c[0], 0, c[2]], [0, c[1], c[3]], [0, 0, 1]], dtype=o3d.core.Dtype.Float64)
     poses = np.loadtxt(f'{result}/traj_full.txt')
-    # poses = [np.linalg.inv(to_se3_matrix(poses[int(s)])) for s in stamps]
     poses = [to_se3_matrix(poses[int(s)]) for s in stamps]
     poses = list(map(lambda x: o3d.core.Tensor(x, dtype=o3d.core.Dtype.Float64), poses))
     return intrinsic, poses
@@ -74,61 +66,49 @@ class HiSLAM2Scene(Scene):
 
     def get_frame_list(self):
         self.frames = []
-        # output_params, scene_params = load_hislam2_scene(self.root_dir)
-        # poses = scene_params['poses']
-        # pts3d = scene_params['pts3d']
-        # Ks = scene_params['Ks']
-        # image_names = scene_params['image_files']
-        # confs = scene_params['im_conf']
-        # depths = scene_params['depths']
         image_names = os.listdir(os.path.join(self.root_dir, 'renders', 'image_after_opt'))
         stamps = [float(os.path.basename(i)[:-4]) for i in image_names]
         intrinsic, poses = load_intrinsic_extrinsic(self.root_dir, stamps)
         
         for i in range(len(image_names)):
-            # frame_id = Path(image_names[i]).stem
-            # image_path = image_names[i]
-            # pose = poses[i]
-            # intrinsics = Ks[i]
-            # depth = depths[i]
-            # confidence = confs[i]
-            # output_params = output_params
-
             image_path = os.path.join(self.root_dir, 'renders', 'image_after_opt', os.path.basename(image_names[i]))
             pose = poses[i]
             intrinsics = intrinsic
-            # print(os.path.join(self.root_dir, 'renders', 'depth_after_opt', os.path.basename(image_names[i]))[:-4] + '.png')
-            # print(pose)
-            depth = cv2.imread(os.path.join(self.root_dir, 'renders', 'depth_after_opt', os.path.basename(image_names[i])[:-4] + '.png'))[:, :, 0]
-            depth = o3d.core.Tensor(depth, dtype=o3d.core.Dtype.Float64)
-            # print(depth.shape)
             confidence = 1.0
             output_params = None
 
-            self.frames.append(HiSLAM2Frame(image_path=image_path, pose=pose, intrinsics=intrinsics, depth=depth, confidence=confidence, output_params=output_params))
+            self.frames.append(HiSLAM2Frame(image_path=image_path, pose=pose, intrinsics=intrinsics, depth_path=depth_path, confidence=confidence, output_params=output_params))
 
         return self.frames
 
 
 class HiSLAM2Frame(Frame):
-    def __init__(self, image_path, pose, intrinsics, depth, confidence, output_params):
+    def __init__(self, image_path, pose, intrinsics, depth_path, confidence, output_params):
         pose = pose.numpy()
         intrinsics = intrinsics.numpy()
-        depth = depth.numpy()
-        # confidence = confidence.numpy()
-
         super().__init__(image_path=image_path, pose=pose, depth_intrinsics=intrinsics)
         self.confidence = confidence
         self.output_params = output_params
-        self._depth = depth
+        self.depth_path = depth_path
+        self._depth = None
 
     @property
     def depth(self):
+        if self.depth_path is None:
+            return None
+        if self._depth is None:
+            self._depth = cv2.imread(self.depth_path, cv2.IMREAD_ANYDEPTH) / 6553.5
         return self._depth
 
     @property
     def frame_id(self):
         return Path(self.image_path).stem
+    
+    def align(self, inv_pose: np.ndarray, gt_pose: np.ndarray, scale: float):
+        if self._depth is None:
+            _ = self.depth
+        
+        super().align(inv_pose, gt_pose, scale)
 
     def get_pcd(self, confidence_threshold=0, depth_truncation=np.inf):
         pose = np.eye(4)
