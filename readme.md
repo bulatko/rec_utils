@@ -27,7 +27,7 @@ scannet_scene = scannet_dataset[scene_id]
 dust3r_scene = dust3r_dataset[scene_id]
 
 aligner = build_aligner_1p1d(source_scene=dust3r_scene, target_scene=scannet_scene)
-aligner.align(scene, inplace=True)
+aligner.align(dust3r_scene, inplace=True)
 
 # how much frames use to build point cloud
 frames_range = range(0, len(dust3r_scene), 3)
