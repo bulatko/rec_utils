@@ -76,6 +76,36 @@ class DUSt3RScene(Scene):
 
         return self.frames
 
+    def get_confidence_threshold_by_percentile(self, confidence_percentile=0):
+        if confidence_percentile > 0:
+            confidences = [frame.confidence for frame in self.frames]
+            return np.percentile(confidences, confidence_percentile)
+        return 0
+
+    def get_pcd(self, range_frames=None, ignore_error=True, confidence_percentile=0, **frame_kwargs):
+        if confidence_percentile > 0:
+            if "confidence_threshold" in frame_kwargs:
+                raise ValueError("Confidence threshold is already set")
+            confidence_threshold = self.get_confidence_threshold_by_percentile(confidence_percentile)
+            frame_kwargs["confidence_threshold"] = confidence_threshold
+        if range_frames is None:
+            range_frames = range(len(self))
+        all_vertices = []
+        all_colors = []
+        for i in range_frames:
+            frame = self.frames[i]
+            try:
+                vertices, colors = frame.get_pcd(**frame_kwargs)
+                all_vertices.append(vertices)
+                all_colors.append(colors)
+            except ValueError as e:
+                if ignore_error:
+                    continue
+                raise e
+        all_vertices = np.concatenate(all_vertices, axis=0)
+        all_colors = np.concatenate(all_colors, axis=0)
+        return all_vertices, all_colors
+
 
 class DUSt3RFrame(Frame):
     def __init__(self, image_path, pose, intrinsics, depth, confidence, output_params):
@@ -96,6 +126,9 @@ class DUSt3RFrame(Frame):
     @property
     def frame_id(self):
         return Path(self.image_path).stem
+
+    def masked_depth(self, confidence_threshold):
+        return self._depth * (self.confidence > confidence_threshold)
 
     def get_pcd(self, confidence_threshold=0, depth_truncation=np.inf):
         pose = np.eye(4)
