@@ -1,5 +1,4 @@
 import numpy as np
-import open3d as o3d
 import os
 
 def read_bin(bin_path):

@@ -27,6 +27,10 @@ class Scene:
         return len(self.frames)
 
     @property
+    def id(self):
+        return self.root_dir.stem
+
+    @property
     def images(self):
         return _IndexableProperty(self.frames, 'image')
 

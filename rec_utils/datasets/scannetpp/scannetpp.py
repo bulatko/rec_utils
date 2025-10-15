@@ -1,10 +1,9 @@
 from rec_utils.structures import Scene, Frame
 from pathlib import Path
-import json
 from .splits import TRAIN_SPLIT, VAL_SPLIT, ALL_SPLIT
 from typing import Union
-import numpy as np
 import os
+from .utils import read_cameras_text, read_images_text
 
 SPLIT_MAP = {
     "train": TRAIN_SPLIT,
@@ -13,9 +12,11 @@ SPLIT_MAP = {
 }
 
 class ScanNetPPDataset:
-    def __init__(self, root_dir: Union[str, Path], split: Union[str, list[str]] = "all", posed_images: bool = False):
+    def __init__(self, root_dir: Union[str, Path], data_dir: Union[str, Path], split: Union[str, list[str]] = "all"):
         if isinstance(root_dir, str):
             root_dir = Path(root_dir)
+        if isinstance(data_dir, str):
+            data_dir = Path(data_dir)
 
         if split not in ["train", "val", "all"]:
             print("try to use custom split")
@@ -28,8 +29,8 @@ class ScanNetPPDataset:
         else:
             self.split = split
             self.ids = SPLIT_MAP[split]
-        self.posed_images = posed_images
         self.root_dir = root_dir
+        self.data_dir = data_dir
         self.scenes = [None for _ in range(len(self.ids))]
         self.scene_id2index = {scene_id: index for index, scene_id in enumerate(self.ids)}
     
@@ -39,47 +40,44 @@ class ScanNetPPDataset:
     def load_scene(self, index):
         if self.scenes[index] is not None:
             return self.scenes[index]
-        if self.posed_images:
-            self.scenes[index] = ScanNetPosedImagesScene(self.root_dir / self.ids[index])
-        else:
-            self.scenes[index] = ScanNetPPScene(self.root_dir / self.ids[index])
+        self.scenes[index] = ScanNetPPScene(self.root_dir / self.ids[index], self.data_dir / self.ids[index])
         return self.scenes[index]
 
     def __getitem__(self, index):
         if isinstance(index, str):
             index = self.scene_id2index[index]
-        if isinstance(index, int):
-            index = index
-            return self.load_scene(index)
+        
+        return self.load_scene(index)
 
-        raise ValueError(f"Invalid index type {type(index)}")
 
     def __repr__(self):
         return f"ScanNetPPDataset(root_dir={self.root_dir}, split={self.split}, num_scenes={len(self.scenes)})"
 
 
 
+
 class ScanNetPPScene(Scene):
-    def __init__(self, root_dir: Path):
+    def __init__(self, root_dir: Path, data_dir: Path):
         self.root_dir = root_dir
+        self.data_dir = data_dir
         super().__init__(root_dir)
 
     def get_frame_list(self):
+        cameras = read_cameras_text(self.data_dir / 'iphone' / 'colmap' / "cameras.txt")
+        images = read_images_text(self.data_dir / 'iphone' / 'colmap' / "images.txt")
         self.frames = []
-        scene_name = os.path.basename(self.root_dir)
-        info_path = f'/home/jovyan/users/lemeshko/mmdetection3d/data/scannetpp/scannetpp_src_data/data/{scene_name}/iphone/pose_intrinsic_imu.json'
-        with open(info_path, "r") as f:
-            info = json.load(f)
         color_dir = self.root_dir / "iphone" / "rgb"
         depth_dir = self.root_dir / "iphone" / "render_depth"
 
-        for frame in os.listdir(color_dir):
-            frame_id = os.path.splitext(frame)[0]
+        for frame in images:
+            frame_id = frame["frame_id"]
             color_path = color_dir / f"{frame_id}.jpg"
+            if not color_path.exists():
+                continue
             depth_path = depth_dir / f"{frame_id}.png"
-            depth_path = depth_path if os.path.exists(depth_path) else None
-            pose = info[frame_id]["aligned_pose"] if frame_id in info else None
-            intrinsics = info[frame_id]["intrinsic"] if frame_id in info else None
+            depth_path = depth_path if depth_path.exists() else None
+            pose = frame["pose"]
+            intrinsics = cameras[frame["camera_id"]]
 
             self.frames.append(ScanNetPPFrame(image_path=color_path, depth_path=depth_path, pose=pose, image_intrinsics=intrinsics, depth_scale=1000.0))
         return self.frames
@@ -95,5 +93,4 @@ class ScanNetPPFrame(Frame):
 
     @property
     def frame_id(self):
-        # return Path(self.image_path).stem
-        return Path(self.image_path).stem[6:]
+        return self.image_path.stem.split("_")[1]

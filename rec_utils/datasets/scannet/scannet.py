@@ -47,11 +47,10 @@ class ScanNetDataset:
     def __getitem__(self, index):
         if isinstance(index, str):
             index = self.scene_id2index[index]
-        if isinstance(index, int):
-            index = index
-            return self.load_scene(index)
+            
+        return self.load_scene(index)
 
-        raise ValueError(f"Invalid index type {type(index)}")
+        
 
     def __repr__(self):
         return f"ScanNetDataset(root_dir={self.root_dir}, split={self.split}, num_scenes={len(self.scenes)})"

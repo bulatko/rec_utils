@@ -50,11 +50,9 @@ class HiSLAM2Dataset:
     def __getitem__(self, index):
         if isinstance(index, str):
             index = self.scene_id2index[index]
-        if isinstance(index, int):
-            index = index
-            return self.load_scene(index)
 
-        raise ValueError(f"Invalid index type {type(index)}")
+        
+        return self.load_scene(index)
 
 
     def __repr__(self):
