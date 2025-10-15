@@ -41,7 +41,7 @@ def build_aligner_1p1d(source_scene: Scene, target_scene: Scene, align_fn=abs_re
     pose_ids = None
     depth_ids = None
 
-    
+
     for source_index in range(len(source_scene)):
         source_frame = source_scene[source_index]
         for target_index in range(len(target_scene)):
