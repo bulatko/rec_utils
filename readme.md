@@ -8,6 +8,62 @@ Library with usefull instruments for 3D reconstruction
 pip install -e .
 ```
 
+
+## Run DUSt3R model
+
+```
+from rec_utils.datasets import DUSt3RDataset, ScanNetDataset
+from rec_utils.reconstruction.dust3r import DUSt3RModel, run_dust3r_inference, export_dust3r_scene
+from pathlib import Path
+
+
+root_dir = "SCANNET_ROOT_DIR"
+
+dataset = ScanNet(
+    root_dir=root_dir,
+    split="all",
+)
+
+
+device = "cuda:0"
+posed = False # True to pass poses into dust3r
+output_dir = Path("OUTPUT_DIR")
+
+image_size = 512
+num_images = 40
+model = DUSt3RModel.from_pretrained().to(device)
+
+
+for index in range(len(dataset)):
+    scene = dataset[index]
+
+    output_path = output_dir / scene.id
+
+    optimizer = run_dust3r_inference(
+        model=model,
+        scene=scene,
+        image_size=image_size,
+        device=device,
+        num_images=num_images,
+        silent=False,
+        posed=args.posed,
+    )
+
+    export_dust3r_scene(optimizer=optimizer, output_dir=output_path)
+
+# now you can access dust3r scans via DUSt3RDataset & DUSt3RFrame
+
+dust3r_dataset = DUSt3RDataset(
+    root_dir=output_dir
+)
+len(dust3r_dataset)
+# 1512
+
+vertices, colors = dust3r_dataset[0].get_pcd()
+
+
+```
+
 ## Aligning
 
 ```
