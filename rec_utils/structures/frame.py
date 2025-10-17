@@ -100,7 +100,7 @@ class Frame:
         if self.image_path is None:
             return None
         if self._image is None:
-            image = cv2.imread(self.image_path)
+            image = cv2.imread(str(self.image_path))
             self._image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return self._image
 
@@ -109,7 +109,7 @@ class Frame:
         if self.depth_path is None:
             return None
         if self._depth is None:
-            self._depth = cv2.imread(self.depth_path, cv2.IMREAD_UNCHANGED) / self._depth_scale
+            self._depth = cv2.imread(str(self.depth_path), cv2.IMREAD_UNCHANGED) / self._depth_scale
         return self._depth
     
     @property
