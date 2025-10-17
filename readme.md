@@ -11,7 +11,7 @@ pip install -e .
 
 ## Run DUSt3R model
 
-```
+```python
 from rec_utils.datasets import DUSt3RDataset, ScanNetDataset
 from rec_utils.reconstruction.dust3r import DUSt3RModel, run_dust3r_inference, export_dust3r_scene
 from pathlib import Path
@@ -66,7 +66,7 @@ vertices, colors = dust3r_dataset[0].get_pcd()
 
 ## Aligning
 
-```
+```python
 from rec_utils.datasets import DUSt3RDataset, ScanNetDataset
 from rec_utils.aligner import build_aligner_1p1d
 import open3d as o3d
