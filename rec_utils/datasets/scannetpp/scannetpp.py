@@ -79,7 +79,10 @@ class ScanNetPPScene(Scene):
             pose = frame["pose"]
             intrinsics = cameras[frame["camera_id"]]
 
-            self.frames.append(ScanNetPPFrame(image_path=color_path, depth_path=depth_path, pose=pose, image_intrinsics=intrinsics, depth_scale=1000.0))
+            frame = ScanNetPPFrame(image_path=color_path, depth_path=depth_path, pose=pose, depth_scale=1000.0)
+            frame._intrinsics = intrinsics
+
+            self.frames.append(frame)
         return self.frames
 
     def __repr__(self):

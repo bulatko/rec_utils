@@ -127,26 +127,25 @@ class Frame:
             return None
         return self._pose
 
-    def shape(self, item):
+    def _shape(self, item):
         if item is None:
             raise ValueError(f"Item is None")
         return item.shape
 
     @property
     def image_shape(self):
-        return self.shape(self.image)
+        return self._shape(self.image)
 
     @property
     def depth_shape(self):
-        return self.shape(self.depth)
+        return self._shape(self.depth)
 
     def get_pcd(self):
         pose = np.eye(4)
         if self.pose is not None:
             pose = self.pose
         
-        if self._image_intrinsics is None and self._depth_intrinsics is None:
-            raise ValueError("Image and depth intrinsics are both None")
+        
         image = self.image
         depth = self.depth
 
@@ -155,8 +154,7 @@ class Frame:
         if image is None:
             image = np.zeros((depth.shape[0], depth.shape[1], 3))
 
-        intrinsics = self.unscaled_intrinsics
-        depth_intrinsics = adjust_intrinsics(intrinsics, (1, 1), self.depth_shape)
+        depth_intrinsics = self.depth_intrinsics
         depth_shape = self.depth_shape
         image = cv2.resize(image, (depth_shape[1], depth_shape[0]), interpolation=cv2.INTER_LINEAR)
 
