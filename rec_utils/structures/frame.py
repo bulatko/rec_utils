@@ -1,12 +1,13 @@
 import numpy as np
 import cv2
-import open3d as o3d
 from rec_utils.structures.utils import adjust_intrinsics
+from rec_utils.functions.matrix import check_matrix_shape, extend_matrix
+from pathlib import Path
 
 class Frame:
     def __init__(self, image_path=None, depth_path=None, pose=None, image_intrinsics=None, depth_intrinsics=None, depth_scale=1.0):
-        self.image_path = image_path
-        self.depth_path = depth_path
+        self.image_path = Path(image_path) if image_path is not None else None
+        self.depth_path = Path(depth_path) if depth_path is not None else None
         self._pose = self._preprocess_pose(pose)
         self._image_intrinsics = self._preprocess_intrinsics(image_intrinsics)
         self._depth_intrinsics = self._preprocess_intrinsics(depth_intrinsics)
@@ -20,8 +21,8 @@ class Frame:
             matrix = np.asarray(matrix)
             if np.isinf(matrix).any() or np.isnan(matrix).any():
                 return None
-            if self._check_matrix_shape(matrix, possible_shapes=[(3, 3), (3, 4), (4, 4)]):
-                return self._extend_matrix(matrix)
+            if check_matrix_shape(matrix, possible_shapes=[(3, 3), (3, 4), (4, 4)]):
+                return extend_matrix(matrix)
             else:
                 raise ValueError(f"Pose matrix has invalid shape {matrix.shape}")
         return None
@@ -29,8 +30,8 @@ class Frame:
     def _preprocess_intrinsics(self, matrix):
         if matrix is not None:
             matrix = np.asarray(matrix)
-            if self._check_matrix_shape(matrix, possible_shapes=[(2, 2), (3, 3), (4, 4)]):
-                return self._extend_matrix(matrix)
+            if check_matrix_shape(matrix, possible_shapes=[(2, 2), (3, 3), (4, 4)]):
+                return extend_matrix(matrix)
             else:
                 raise ValueError(f"Intrinsics matrix has invalid shape {matrix.shape}")
         return None
@@ -93,16 +94,6 @@ class Frame:
         self._pose = gt_pose @ self._pose
         self._depth = self._depth * scale
 
-    def _check_matrix_shape(self, matrix, possible_shapes):
-        if matrix.shape not in possible_shapes:
-            return False
-        return True
-
-    def _extend_matrix(self, matrix):
-        result = np.eye(4)
-        if matrix is not None:
-            result[:matrix.shape[0], :matrix.shape[1]] = matrix
-        return result
 
     @property
     def image(self):

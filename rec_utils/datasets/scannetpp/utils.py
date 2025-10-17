@@ -1,8 +1,10 @@
 import numpy as np
-from rec_utils.functions import qt2pose
+from rec_utils.functions.pose import qt2pose
+from typing import Union
+from pathlib import Path
 
 
-def read_images_text(path):
+def read_images_text(path: Union[str, Path]) -> list[dict]:
     images = []
     with open(path, "r") as fid:
         while True:
@@ -12,15 +14,11 @@ def read_images_text(path):
             line = line.strip()
             if len(line) > 0 and line[0] != "#":
                 elems = line.split()
-                image_id = int(elems[0])
                 qvec = np.array(tuple(map(float, elems[1:5])))
                 tvec = np.array(tuple(map(float, elems[5:8])))
                 camera_id = int(elems[8])
                 image_name = elems[9]
                 elems = fid.readline().split()
-                xys = np.column_stack([tuple(map(float, elems[0::3])),
-                                    tuple(map(float, elems[1::3]))])
-                point3D_ids = np.array(tuple(map(int, elems[2::3])))
                 images.append({
                     "frame_id": image_name.split(".")[0],
                     "camera_id": camera_id,
@@ -29,7 +27,7 @@ def read_images_text(path):
     return images
 
 
-def read_cameras_text(path):
+def read_cameras_text(path: Union[str, Path]) -> dict:
     """
     see: src/base/reconstruction.cc
         void Reconstruction::WriteCamerasText(const std::string& path)
@@ -60,7 +58,7 @@ def read_cameras_text(path):
 
                 intrinsic[0, 0] = fx / w
                 intrinsic[0, 2] = cx / w
-                
+
                 intrinsic[1, 1] = fy / h
                 intrinsic[1, 2] = cy / h
 
