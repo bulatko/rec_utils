@@ -1,6 +1,6 @@
 from rec_utils.structures import Scene, Frame
 from pathlib import Path
-from .splits import TRAIN_SPLIT, VAL_SPLIT, ALL_SPLIT
+from .splits import TRAIN_SPLIT, VAL_SPLIT, ALL_SPLIT, V2_SPLIT
 from typing import Union
 import os
 from .utils import read_cameras_text, read_images_text
@@ -8,7 +8,8 @@ from .utils import read_cameras_text, read_images_text
 SPLIT_MAP = {
     "train": TRAIN_SPLIT,
     "val": VAL_SPLIT,
-    "all": ALL_SPLIT
+    "all": ALL_SPLIT,
+    'v2': V2_SPLIT
 }
 
 class ScanNetPPDataset:
@@ -18,7 +19,7 @@ class ScanNetPPDataset:
         if isinstance(data_dir, str):
             data_dir = Path(data_dir)
 
-        if split not in ["train", "val", "all"]:
+        if split not in SPLIT_MAP.keys():
             print("try to use custom split")
             self.split = "custom"
             ids = split
@@ -70,7 +71,7 @@ class ScanNetPPScene(Scene):
         depth_dir = self.root_dir / "iphone" / "render_depth"
 
         for frame in images:
-            frame_id = frame["frame_id"]
+            frame_id = Path(frame["frame_id"]).stem
             color_path = color_dir / f"{frame_id}.jpg"
             if not color_path.exists():
                 continue
@@ -96,4 +97,4 @@ class ScanNetPPFrame(Frame):
 
     @property
     def frame_id(self):
-        return self.image_path.stem.split("_")[1]
+        return self.image_path.stem

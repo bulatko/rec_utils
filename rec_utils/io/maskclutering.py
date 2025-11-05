@@ -5,7 +5,7 @@ import cv2
 import os
 import open3d as o3d
 
-def export_mask_clustering(scene: Scene, output_dir: Path, voxel_size: float = 0.025, depth_prep_fn = lambda depth: (depth * 1000).astype(np.uint16), **reconstruction_kwargs):
+def export_mask_clustering(scene: Scene, output_dir: Path, voxel_size: float = 0.025, depth_prep_fn = lambda depth: (depth * 1000).astype(np.uint16), confidence_threshold=3, depth_truncation=np.inf):
     output_dir.mkdir(parents=True, exist_ok=True)
     K_color = scene.frames[0].image_intrinsics
     K_depth = scene.frames[0].depth_intrinsics
@@ -27,7 +27,7 @@ def export_mask_clustering(scene: Scene, output_dir: Path, voxel_size: float = 0
     
     for frame in scene.frames:
 
-        assert frame.image_path is not None or frame.image is not None, "Image is None"
+        assert frame.image_path is not None, "Image is None"
         assert frame.depth_path is not None or frame.depth is not None, "Depth is None"
         assert frame.pose is not None, "Pose is None"
 
@@ -53,13 +53,16 @@ def export_mask_clustering(scene: Scene, output_dir: Path, voxel_size: float = 0
             except FileExistsError:
                 pass
         elif frame.depth is not None:
-            cv2.imwrite(depth_path, depth_prep_fn(frame.depth))
+            depth = frame.masked_depth(confidence_threshold=confidence_threshold)
+            depth[depth > depth_truncation] = 0
+            
+            cv2.imwrite(depth_path, depth_prep_fn(depth))
         else:
             raise ValueError(f"Depth not found for frame {frame.frame_id}")
 
         np.savetxt(pose_path, frame.pose)
 
-    vertices, colors = scene.get_pcd(**reconstruction_kwargs)
+    vertices, colors = scene.get_pcd(confidence_threshold=confidence_threshold, depth_truncation=depth_truncation)
 
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(vertices)
@@ -67,4 +70,4 @@ def export_mask_clustering(scene: Scene, output_dir: Path, voxel_size: float = 0
     pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
     o3d.io.write_point_cloud(output_dir / f"{scene.id}.ply", pcd)
     
-    return vertices, colors
+    return np.asarray(pcd.points), np.asarray(pcd.colors)
